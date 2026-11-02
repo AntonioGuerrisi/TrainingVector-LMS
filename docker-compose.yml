@@ -2,15 +2,15 @@ services:
   database:
     image: postgres:16-alpine
     environment:
-      POSTGRES_DB: lms
-      POSTGRES_USER: lms
-      POSTGRES_PASSWORD: lms
+      POSTGRES_DB: ${POSTGRES_DB:-lms}
+      POSTGRES_USER: ${POSTGRES_USER:-lms}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-lms}
     ports:
-      - "5432:5432"
+      - "${DATABASE_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U lms -d lms"]
+      test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -18,7 +18,7 @@ services:
   cache:
     image: redis:7-alpine
     ports:
-      - "6379:6379"
+      - "${CACHE_PORT:-6379}:6379"
     volumes:
       - redis_data:/data
     healthcheck:
@@ -32,18 +32,18 @@ services:
       context: .
       dockerfile: apps/backend/Dockerfile
     environment:
-      NODE_ENV: production
-      PORT: 4000
-      DATABASE_URL: postgresql://lms:lms@database:5432/lms?schema=public
-      REDIS_URL: redis://cache:6379
-      JWT_SECRET: change-this-secret-before-production
-      CORS_ORIGIN: http://localhost:5173
-      UPLOAD_DIR: uploads
-      SEED_DEMO_DATA: "true"
+      NODE_ENV: ${NODE_ENV:-production}
+      PORT: ${PORT:-4000}
+      DATABASE_URL: ${DATABASE_URL:-postgresql://lms:lms@database:5432/lms?schema=public}
+      REDIS_URL: ${REDIS_URL:-redis://cache:6379}
+      JWT_SECRET: ${JWT_SECRET:-change-this-secret-before-production}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:5173}
+      UPLOAD_DIR: ${UPLOAD_DIR:-uploads}
+      SEED_DEMO_DATA: ${SEED_DEMO_DATA:-true}
     ports:
-      - "4000:4000"
+      - "${BACKEND_PORT:-4000}:${PORT:-4000}"
     volumes:
-      - backend_uploads:/app/apps/backend/uploads
+      - backend_uploads:/app/apps/backend/${UPLOAD_DIR:-uploads}
     depends_on:
       database:
         condition: service_healthy
@@ -55,9 +55,9 @@ services:
       context: .
       dockerfile: apps/frontend/Dockerfile
       args:
-        VITE_API_URL: http://localhost:4000
+        VITE_API_URL: ${VITE_API_URL:-http://localhost:4000}
     ports:
-      - "5173:80"
+      - "${FRONTEND_PORT:-5173}:80"
     depends_on:
       - backend
 

@@ -1,4 +1,5 @@
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import cors from "cors";
 import express from "express";
 import helmet from "helmet";
@@ -22,6 +23,7 @@ app.use(cors({ origin: env.CORS_ORIGIN, credentials: true }));
 app.use(express.json({ limit: "2mb" }));
 app.use(morgan(env.NODE_ENV === "production" ? "combined" : "dev"));
 app.use("/uploads", express.static(path.resolve(env.UPLOAD_DIR)));
+app.use("/demo", express.static(fileURLToPath(new URL("../demo", import.meta.url))));
 
 app.get("/api/health", async (_req, res) => {
   await prisma.$queryRaw`SELECT 1`;

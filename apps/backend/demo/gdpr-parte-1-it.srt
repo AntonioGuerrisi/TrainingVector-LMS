@@ -1,0 +1,87 @@
+1
+00:00:00,250 --> 00:00:03,255
+Un acquisto online, un curriculum, una foto: i dati
+
+2
+00:00:03,255 --> 00:00:06,261
+personali sono ovunque. Il GDPR, regolamento generale sulla protezione
+
+3
+00:00:06,261 --> 00:00:09,266
+dei dati, tutela le persone quando queste informazioni vengono
+
+4
+00:00:09,266 --> 00:00:09,600
+utilizzate.
+
+5
+00:00:10,250 --> 00:00:13,367
+Lo hanno approvato il Parlamento europeo e il Consiglio
+
+6
+00:00:13,367 --> 00:00:16,483
+dell'Unione europea nel duemilasedici. Si applica dal venticinque maggio
+
+7
+00:00:16,483 --> 00:00:19,600
+duemiladiciotto, con regole comuni per imprese ed enti pubblici.
+
+8
+00:00:20,250 --> 00:00:23,487
+Un dato personale può identificarti, anche indirettamente: una foto,
+
+9
+00:00:23,487 --> 00:00:26,723
+un'email, la posizione. I dati sulla salute richiedono tutele
+
+10
+00:00:26,723 --> 00:00:29,600
+rafforzate. Non conta soltanto il nome sul documento.
+
+11
+00:00:30,250 --> 00:00:33,255
+Chi tratta dati deve avere una base giuridica valida,
+
+12
+00:00:33,255 --> 00:00:36,261
+spiegare perché li usa, raccogliere solo ciò che serve
+
+13
+00:00:36,261 --> 00:00:39,266
+e proteggerlo. Il consenso è una possibile base: non
+
+14
+00:00:39,266 --> 00:00:39,600
+l'unica.
+
+15
+00:00:40,250 --> 00:00:42,965
+Puoi sapere quali dati vengono trattati, chiederne la correzione
+
+16
+00:00:42,965 --> 00:00:45,679
+e, nei casi previsti, la cancellazione. Se qualcosa non
+
+17
+00:00:45,679 --> 00:00:48,394
+torna, puoi presentare un reclamo al Garante per la
+
+18
+00:00:48,394 --> 00:00:49,600
+protezione dei dati personali.
+
+19
+00:00:50,250 --> 00:00:53,152
+Nella pratica: controlla i destinatari, usa canali sicuri e
+
+20
+00:00:53,152 --> 00:00:56,053
+non condividere dati inutili. Il GDPR non serve a
+
+21
+00:00:56,053 --> 00:00:58,955
+bloccare il lavoro: serve a usare le informazioni rispettando
+
+22
+00:00:58,955 --> 00:00:59,600
+le persone.

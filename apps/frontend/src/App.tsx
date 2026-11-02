@@ -67,6 +67,19 @@ function isCheckpointInteraction(interaction: H5PInteraction) {
   return interaction.type === "checkpoint";
 }
 
+function createInteractionId() {
+  if (typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+
+  const bytes = crypto.getRandomValues(new Uint8Array(16));
+  bytes[6] = (bytes[6] & 0x0f) | 0x40;
+  bytes[8] = (bytes[8] & 0x3f) | 0x80;
+  const hex = Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
+
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+}
+
 function isStandaloneCourse(course: Course) {
   return course.id.startsWith("standalone:");
 }
@@ -119,6 +132,7 @@ export function App() {
   const [courses, setCourses] = useState<Course[]>([]);
   const [selectedCourseId, setSelectedCourseId] = useState("");
   const [selectedVideoId, setSelectedVideoId] = useState("");
+  const [previewCourse, setPreviewCourse] = useState<Course | null>(null);
   const [overview, setOverview] = useState<ReportOverview | null>(null);
   const [directory, setDirectory] = useState<DirectoryData | null>(null);
   const [progressRows, setProgressRows] = useState<ProgressReportRow[]>([]);
@@ -126,7 +140,10 @@ export function App() {
   const [loading, setLoading] = useState(Boolean(token));
   const [toast, setToast] = useState<ToastState>(null);
 
-  const selectedCourse = useMemo(() => courses.find((course) => course.id === selectedCourseId) ?? courses[0], [courses, selectedCourseId]);
+  const selectedCourse = useMemo(
+    () => (previewCourse?.id === selectedCourseId ? previewCourse : courses.find((course) => course.id === selectedCourseId) ?? courses[0]),
+    [courses, previewCourse, selectedCourseId]
+  );
   const selectedVideo = useMemo(
     () => selectedCourse?.videos.find((video) => video.id === selectedVideoId && !video.locked) ?? selectedCourse?.videos.find((video) => !video.locked),
     [selectedCourse, selectedVideoId]
@@ -142,10 +159,11 @@ export function App() {
       const courseResponse = await api.courses(nextToken);
       setCourses(courseResponse.courses);
       const firstCourse = courseResponse.courses[0];
-      setSelectedCourseId((current) => (current && courseResponse.courses.some((course) => course.id === current) ? current : firstCourse?.id ?? ""));
+      setSelectedCourseId((current) => (current && (courseResponse.courses.some((course) => course.id === current) || previewCourse?.id === current) ? current : firstCourse?.id ?? ""));
       setSelectedVideoId((current) => {
         const stillAvailable = courseResponse.courses.some((course) => course.videos.some((video) => video.id === current && !video.locked));
-        return current && stillAvailable ? current : firstCourse?.videos.find((video) => !video.locked)?.id ?? "";
+        const previewStillAvailable = previewCourse?.id === selectedCourseId && previewCourse.videos.some((video) => video.id === current);
+        return current && (stillAvailable || previewStillAvailable) ? current : firstCourse?.videos.find((video) => !video.locked)?.id ?? "";
       });
 
       if (isStaff(nextUser.role)) {
@@ -224,6 +242,39 @@ export function App() {
 
   function selectLearning(courseId: string, videoId?: string) {
     const course = courses.find((entry) => entry.id === courseId);
+    if (!course && courseId.startsWith("standalone:") && videoId) {
+      const directoryVideo = directory?.videos.find((entry) => entry.id === videoId);
+      if (directoryVideo && isStaff(user?.role ?? "STUDENT")) {
+        const preview: Course = {
+          id: courseId,
+          title: directoryVideo.title,
+          description: directoryVideo.description,
+          status: "PUBLISHED",
+          totalVideos: 1,
+          completedVideos: 0,
+          progressPercent: 0,
+          videos: [{
+            id: directoryVideo.id,
+            title: directoryVideo.title,
+            description: directoryVideo.description,
+            sourceUrl: directoryVideo.sourceUrl,
+            durationSeconds: directoryVideo.durationSeconds,
+            h5pConfig: directoryVideo.h5pConfig,
+            position: 1,
+            gatePrevious: false,
+            locked: false,
+            progress: { percent: 0, completed: false, watchedSeconds: 0, lastPositionSeconds: 0 }
+          }]
+        };
+        setPreviewCourse(preview);
+        setSelectedCourseId(courseId);
+        setSelectedVideoId(videoId);
+        setActivePage("learning");
+      }
+      return;
+    }
+
+    setPreviewCourse(null);
     const video = videoId ? course?.videos.find((entry) => entry.id === videoId) : course?.videos.find((entry) => !entry.locked);
 
     setSelectedCourseId(courseId);
@@ -367,7 +418,7 @@ function PageRouter({
       return <StudentVideosPage courses={courses.filter(isStandaloneCourse)} onSelectLearning={onSelectLearning} />;
     }
 
-    return directory ? <VideoManagementPage token={token} directory={directory} onRunAction={onRunAction} /> : <EmptyState title="Video library unavailable" description="Refresh the workspace or sign in with a staff account." />;
+    return directory ? <VideoManagementPage token={token} directory={directory} onRunAction={onRunAction} onPreviewVideo={(videoId) => onSelectLearning(`standalone:${videoId}`, videoId)} /> : <EmptyState title="Video library unavailable" description="Refresh the workspace or sign in with a staff account." />;
   }
 
   if (activePage === "learning") {
@@ -622,7 +673,9 @@ function LearningPanel({ token, course, video, onProgressSaved, onToast }: { tok
   const blockingPopupRef = useRef(false);
   const lastPlaybackTimeRef = useRef<number | null>(null);
   const isSeekingRef = useRef(false);
+  const pendingCheckpointSavesRef = useRef<Set<Promise<void>>>(new Set());
   const [activeInteraction, setActiveInteraction] = useState<H5PInteraction | null>(null);
+  const [popupPosition, setPopupPosition] = useState({ x: 50, y: 50 });
   const [localProgress, setLocalProgress] = useState(video.progress);
 
   useEffect(() => { handledInteractionsRef.current = new Set(); blockingPopupRef.current = false; lastPlaybackTimeRef.current = null; isSeekingRef.current = false; setActiveInteraction(null); setLocalProgress(video.progress); }, [video.id]);
@@ -718,12 +771,20 @@ function LearningPanel({ token, course, video, onProgressSaved, onToast }: { tok
 
     for (const interaction of dueInteractions.filter(isCheckpointInteraction)) {
       if (markInteractionHandled(interaction)) {
-        void saveCheckpointProgress(interaction).catch((error) => { handledInteractionsRef.current.delete(interaction.id); onToast({ type: "error", message: error instanceof Error ? error.message : "Checkpoint progress refresh failed" }); });
+        const pending = saveCheckpointProgress(interaction);
+        pendingCheckpointSavesRef.current.add(pending);
+        void pending.catch((error) => { handledInteractionsRef.current.delete(interaction.id); onToast({ type: "error", message: error instanceof Error ? error.message : "Checkpoint progress refresh failed" }); }).finally(() => pendingCheckpointSavesRef.current.delete(pending));
       }
     }
 
     const nextPopup = dueInteractions.find((interaction) => !isCheckpointInteraction(interaction));
-    if (nextPopup && markInteractionHandled(nextPopup)) { blockingPopupRef.current = true; element.pause(); setActiveInteraction(nextPopup); void saveProgress(false, true).catch((error) => onToast({ type: "error", message: error.message })); }
+    if (nextPopup && markInteractionHandled(nextPopup)) {
+      blockingPopupRef.current = true;
+      element.pause();
+      setPopupPosition({ x: Math.random() * 100, y: Math.random() * 100 });
+      setActiveInteraction(nextPopup);
+      void saveProgress(false, true).catch((error) => onToast({ type: "error", message: error.message }));
+    }
   }
 
   function handleVideoPlay() {
@@ -753,14 +814,34 @@ function LearningPanel({ token, course, video, onProgressSaved, onToast }: { tok
     await videoRef.current?.play().catch(() => undefined);
   }
 
+  async function handleVideoEnded() {
+    await Promise.all([...pendingCheckpointSavesRef.current]);
+    const progress = await saveProgress(true, false);
+    await onProgressSaved();
+    onToast({ type: progress?.completed ? "success" : "info", message: progress?.completed ? "Video completed" : "Progress saved. Required checkpoints are still pending." });
+  }
+
   return (
     <div className="overflow-hidden rounded-lg border bg-white shadow-panel">
-      <div className="bg-slate-950"><video key={video.id} ref={videoRef} className="aspect-video w-full bg-slate-950 object-contain" controls controlsList="nodownload" disablePictureInPicture src={resolveMediaUrl(video.sourceUrl)} onPlay={handleVideoPlay} onSeeking={handleVideoSeeking} onSeeked={handleVideoSeeked} onTimeUpdate={handleTimeUpdate} onEnded={() => { void saveProgress(true, false).then(async (progress) => { await onProgressSaved(); onToast({ type: progress?.completed ? "success" : "info", message: progress?.completed ? "Video completed" : "Progress saved. Required checkpoints are still pending." }); }).catch((error) => onToast({ type: "error", message: error.message })); }} /></div>
+      <div className="bg-slate-950"><video key={video.id} ref={videoRef} className="aspect-video w-full bg-slate-950 object-contain" controls controlsList="nodownload" disablePictureInPicture src={resolveMediaUrl(video.sourceUrl)} onPlay={handleVideoPlay} onSeeking={handleVideoSeeking} onSeeked={handleVideoSeeked} onTimeUpdate={handleTimeUpdate} onEnded={() => { void handleVideoEnded().catch((error) => onToast({ type: "error", message: error.message })); }} /></div>
       <div className="grid gap-4 p-4 lg:grid-cols-[minmax(0,1fr)_220px]">
         <div><p className="text-sm font-medium text-primary">{course.title}</p><h2 className="mt-1 text-2xl font-semibold leading-8">{video.title}</h2><p className="mt-2 text-sm leading-6 text-muted-foreground">{video.description}</p></div>
         <div className="rounded-md border bg-muted/40 p-3"><div className="flex items-center justify-between text-sm"><span>Progress</span><strong>{formatPercent(localProgress.percent)}</strong></div><div className="mt-2 h-2 rounded-full bg-white"><div className="h-2 rounded-full bg-primary" style={{ width: `${localProgress.percent}%` }} /></div><div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground"><FileVideo className="h-4 w-4" aria-hidden="true" />{video.h5pConfig?.interactions?.length ?? 0} H5P interactions</div></div>
       </div>
-      {activeInteraction && <div className="fixed inset-0 z-40 grid place-items-center bg-slate-950/60 p-4"><div className="w-full max-w-md rounded-lg border bg-white p-5 shadow-panel"><h3 className="text-lg font-semibold">{activeInteraction.title}</h3><p className="mt-2 text-sm leading-6 text-muted-foreground">{activeInteraction.prompt}</p><div className="mt-5 flex justify-end"><Button onClick={() => void confirmInteraction(activeInteraction).catch((error) => onToast({ type: "error", message: error.message }))}><Check className="h-4 w-4" aria-hidden="true" />Confirm</Button></div></div></div>}
+      {activeInteraction && (
+        <div className="fixed inset-0 z-40 bg-slate-950/60 p-4">
+          <div className="relative h-full w-full">
+            <div
+              className="absolute max-h-full w-full max-w-md overflow-y-auto rounded-lg border bg-white p-5 shadow-panel"
+              style={{ left: `${popupPosition.x}%`, top: `${popupPosition.y}%`, transform: `translate(-${popupPosition.x}%, -${popupPosition.y}%)` }}
+            >
+              <h3 className="text-lg font-semibold">{activeInteraction.title}</h3>
+              <p className="mt-2 text-sm leading-6 text-muted-foreground">{activeInteraction.prompt}</p>
+              <div className="mt-5 flex justify-end"><Button onClick={() => void confirmInteraction(activeInteraction).catch((error) => onToast({ type: "error", message: error.message }))}><Check className="h-4 w-4" aria-hidden="true" />Confirm</Button></div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -887,7 +968,7 @@ function UserManagementPage({ token, directory, onRunAction }: { token: string; 
   );
 }
 
-function VideoManagementPage({ token, directory, onRunAction }: { token: string; directory: DirectoryData; onRunAction: (action: () => Promise<unknown>, message: string) => Promise<void> }) {
+function VideoManagementPage({ token, directory, onRunAction, onPreviewVideo }: { token: string; directory: DirectoryData; onRunAction: (action: () => Promise<unknown>, message: string) => Promise<void>; onPreviewVideo: (videoId: string) => void }) {
   const [form, setForm] = useState({ title: "", description: "" });
   const [file, setFile] = useState<File | null>(null);
   const [selectedVideoId, setSelectedVideoId] = useState(directory.videos[0]?.id ?? "");
@@ -975,12 +1056,12 @@ function VideoManagementPage({ token, directory, onRunAction }: { token: string;
         </Card>
       </div>
 
-      {selectedVideo ? <VideoDetailEditor token={token} video={selectedVideo} onRunAction={onRunAction} /> : <EmptyState title="No video selected" description="Upload or select a video to edit metadata and H5P checkpoints." />}
+      {selectedVideo ? <VideoDetailEditor token={token} video={selectedVideo} onRunAction={onRunAction} onPreviewVideo={onPreviewVideo} /> : <EmptyState title="No video selected" description="Upload or select a video to edit metadata and H5P checkpoints." />}
     </div>
   );
 }
 
-function VideoDetailEditor({ token, video, onRunAction }: { token: string; video: DirectoryVideo; onRunAction: (action: () => Promise<unknown>, message: string) => Promise<void> }) {
+function VideoDetailEditor({ token, video, onRunAction, onPreviewVideo }: { token: string; video: DirectoryVideo; onRunAction: (action: () => Promise<unknown>, message: string) => Promise<void>; onPreviewVideo: (videoId: string) => void }) {
   const [form, setForm] = useState({ title: video.title, description: video.description, durationSeconds: video.durationSeconds?.toString() ?? "" });
   const [interactions, setInteractions] = useState<H5PInteraction[]>(video.h5pConfig?.interactions ?? []);
 
@@ -1003,7 +1084,10 @@ function VideoDetailEditor({ token, video, onRunAction }: { token: string; video
       <CardHeader>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div><CardTitle>Edit video</CardTitle><p className="mt-1 text-sm text-muted-foreground">{video.title}</p></div>
-          <Button onClick={() => onRunAction(saveVideo, "Video saved")}><Save className="h-4 w-4" aria-hidden="true" />Save video</Button>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" onClick={() => onPreviewVideo(video.id)}><PlayCircle className="h-4 w-4" aria-hidden="true" />Preview video</Button>
+            <Button onClick={() => onRunAction(saveVideo, "Video saved")}><Save className="h-4 w-4" aria-hidden="true" />Save video</Button>
+          </div>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -1012,23 +1096,42 @@ function VideoDetailEditor({ token, video, onRunAction }: { token: string; video
           <label className="text-sm font-medium">Duration<input className="field mt-1" type="number" min="1" placeholder="Seconds" value={form.durationSeconds} onChange={(event) => setForm({ ...form, durationSeconds: event.target.value })} /></label>
         </div>
         <label className="block text-sm font-medium">Description<textarea className="textarea-field mt-1" value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} /></label>
-        <H5PInteractionEditor interactions={interactions} onChange={setInteractions} />
+        <H5PInteractionEditor interactions={interactions} durationSeconds={Number(form.durationSeconds)} onChange={setInteractions} />
       </CardContent>
     </Card>
   );
 }
 
-function H5PInteractionEditor({ interactions, onChange }: { interactions: H5PInteraction[]; onChange: (interactions: H5PInteraction[]) => void }) {
+function H5PInteractionEditor({ interactions, durationSeconds, onChange }: { interactions: H5PInteraction[]; durationSeconds: number; onChange: (interactions: H5PInteraction[]) => void }) {
+  const canGenerateCheckpoints = Number.isSafeInteger(durationSeconds) && durationSeconds >= 5;
+
   function updateInteraction(index: number, patch: Partial<H5PInteraction>) {
     onChange(interactions.map((interaction, position) => (position === index ? { ...interaction, ...patch } : interaction)));
+  }
+
+  function addTrackingCheckpoints() {
+    if (!canGenerateCheckpoints) return;
+
+    const existingTimes = new Set(interactions.filter(isCheckpointInteraction).map((interaction) => interaction.time));
+    const checkpoints: H5PInteraction[] = [];
+    for (let time = 5; time <= durationSeconds; time += 5) {
+      if (!existingTimes.has(time)) {
+        checkpoints.push({ id: createInteractionId(), time, type: "checkpoint", title: `Checkpoint ${time}s`, prompt: "Record that the learner reached this point." });
+      }
+    }
+    onChange([...interactions, ...checkpoints].sort((a, b) => a.time - b.time));
   }
 
   return (
     <div className="space-y-3">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-sm font-semibold">H5P checkpoints</p>
-        <Button variant="outline" onClick={() => onChange([...interactions, { id: crypto.randomUUID(), time: 0, type: "checkpoint", title: "New checkpoint", prompt: "Record that the learner reached this point." }])}><Plus className="h-4 w-4" aria-hidden="true" />Add checkpoint</Button>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" disabled={!canGenerateCheckpoints} onClick={addTrackingCheckpoints}><Plus className="h-4 w-4" aria-hidden="true" />Add checkpoints every 5 seconds</Button>
+          <Button variant="outline" onClick={() => onChange([...interactions, { id: createInteractionId(), time: 0, type: "checkpoint", title: "New checkpoint", prompt: "Record that the learner reached this point." }])}><Plus className="h-4 w-4" aria-hidden="true" />Add checkpoint</Button>
+        </div>
       </div>
+      <p className="text-sm text-muted-foreground">{canGenerateCheckpoints ? "Adds missing tracking checkpoints every 5 seconds up to the video duration. Existing interactions are kept. Click Save video to save changes." : "Set a video duration of at least 5 seconds (in whole seconds) to generate tracking checkpoints."}</p>
       {interactions.map((interaction, index) => (
         <div key={interaction.id} className="rounded-md border bg-white p-3">
           <div className="grid gap-3 md:grid-cols-[120px_1fr_1fr]">

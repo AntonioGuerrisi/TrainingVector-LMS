@@ -30,61 +30,73 @@ async function main() {
     create: { userId: student.id, groupId: group.id, roleLabel: "learner" }
   });
 
-  const videoOne = await prisma.video.upsert({
-    where: { id: "demo-video-intro" },
-    update: {},
-    create: {
+  const demoVideos = [
+    {
       id: "demo-video-intro",
-      title: "Safety introduction",
-      description: "Initial overview of the training path.",
-      sourceUrl: "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4",
-      durationSeconds: 30,
+      title: "GDPR - Parte 1: i concetti base",
+      description: "Che cos'e il GDPR, chi lo ha approvato, a cosa serve e quali diritti tutela. Voce italiana e sottotitoli.",
+      sourceUrl: "/demo/gdpr-parte-1-it.mp4",
+      durationSeconds: 60,
       createdById: admin.id,
       h5pConfig: {
         interactions: [
+          { id: "gdpr-intro-15", time: 15, type: "checkpoint", title: "Le regole europee", prompt: "Hai raggiunto la presentazione del regolamento." },
           {
-            id: "intro-check",
-            time: 8,
+            id: "gdpr-intro-check",
+            time: 30,
             type: "popup",
-            title: "Attention check",
-            prompt: "Have you understood the goal of this course?"
-          }
+            title: "Un momento per riflettere",
+            prompt: "Un dato personale puo identificare una persona anche indirettamente. Hai compreso questo concetto?"
+          },
+          { id: "gdpr-intro-45", time: 45, type: "checkpoint", title: "I diritti delle persone", prompt: "Hai raggiunto la presentazione dei diritti." }
         ]
       }
-    }
-  });
-
-  const videoTwo = await prisma.video.upsert({
-    where: { id: "demo-video-procedure" },
-    update: {},
-    create: {
+    },
+    {
       id: "demo-video-procedure",
-      title: "Operational procedures",
-      description: "Procedure sequence to follow in class and in the field.",
-      sourceUrl: "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4",
-      durationSeconds: 30,
+      title: "GDPR - Parte 2: buone pratiche quotidiane",
+      description: "Minimizzazione, condivisione sicura, credenziali, segnalazione delle violazioni e conservazione. Voce italiana e sottotitoli.",
+      sourceUrl: "/demo/gdpr-parte-2-it.mp4",
+      durationSeconds: 60,
       createdById: admin.id,
       h5pConfig: {
         interactions: [
+          { id: "gdpr-practice-15", time: 15, type: "checkpoint", title: "Solo i dati necessari", prompt: "Hai raggiunto il principio di minimizzazione." },
           {
-            id: "procedure-check",
-            time: 12,
+            id: "gdpr-practice-check",
+            time: 30,
             type: "popup",
-            title: "Midpoint check",
-            prompt: "Which procedure must be completed before moving to the next module?"
-          }
+            title: "Prima di inviare",
+            prompt: "Controlla destinatari, allegati e autorizzazioni prima di condividere dati personali. Sei pronto a proseguire?"
+          },
+          { id: "gdpr-practice-45", time: 45, type: "checkpoint", title: "Segnalare gli incidenti", prompt: "Hai raggiunto la gestione delle violazioni." }
         ]
       }
     }
-  });
+  ];
 
+  for (const video of demoVideos) {
+    const existing = await prisma.video.findUnique({ where: { id: video.id } });
+    const replaceLegacyDemo = existing?.sourceUrl === "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4";
+    await prisma.video.upsert({
+      where: { id: video.id },
+      update: replaceLegacyDemo ? video : {},
+      create: video
+    });
+  }
+
+  const [videoOne, videoTwo] = demoVideos;
+  const existingCourse = await prisma.course.findUnique({ where: { id: "demo-course-safety" } });
   const course = await prisma.course.upsert({
     where: { id: "demo-course-safety" },
-    update: {},
+    update: existingCourse?.title === "Basic safety path" ? {
+      title: "GDPR: dalle basi alla pratica",
+      description: "Due video in italiano da un minuto, con checkpoint e sblocco sequenziale."
+    } : {},
     create: {
       id: "demo-course-safety",
-      title: "Basic safety path",
-      description: "Demo course with sequential video completion gating.",
+      title: "GDPR: dalle basi alla pratica",
+      description: "Due video in italiano da un minuto, con checkpoint e sblocco sequenziale.",
       status: CourseStatus.PUBLISHED,
       createdById: professor.id
     }

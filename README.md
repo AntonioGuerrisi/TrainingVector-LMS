@@ -29,6 +29,8 @@ docker compose up --build
 
 Docker Compose enables `SEED_DEMO_DATA=true` for the backend service, so the demo users and sample course data are created automatically on startup.
 
+The demo course includes two bundled 60-second GDPR videos in Italian, with synthetic narration, subtitles, checkpoints, and sequential unlocking. The backend serves the MP4 files from `apps/backend/demo` at `/demo/`; no external video host is required. Seeding replaces the original flower sample videos, but preserves videos already customized to use a different source.
+
 Open:
 
 - Frontend: http://localhost:5173
@@ -38,11 +40,32 @@ Open:
 
 ```bash
 npm install
-copy .env.example .env
 npm run db:push
 npm run seed
 npm run dev
 ```
+
+For local development, do not copy the production `.env.example`: the backend defaults to development mode with PostgreSQL at `localhost:5432`, Redis at `localhost:6379`, and the frontend/API at `localhost:5173`/`localhost:4000`. Start the local dependencies with `docker compose up -d database cache` before running the commands above.
+
+## Production configuration
+
+Only for production deployment, copy the configuration template at the repository root:
+
+```bash
+cp .env.example .env
+# Edit .env for your deployment before starting containers.
+docker compose up -d --build
+```
+
+`.env` is ignored by Git and must never be committed. Docker Compose reads it automatically; `.env.example` documents all supported deployment variables. Without `.env`, Compose keeps the generic localhost demo defaults used by Quick Start.
+
+Set a strong `POSTGRES_PASSWORD` and an independent random `JWT_SECRET`. Keep `DATABASE_URL` consistent with `POSTGRES_DB`, `POSTGRES_USER`, and `POSTGRES_PASSWORD` (URL-encode special characters). The `database` and `cache` hostnames are internal Docker service names; do not replace them with the public hostname. Changing these variables does not change credentials inside an already initialized PostgreSQL volume.
+
+Set `CORS_ORIGIN` to the exact public frontend origin, and `VITE_API_URL` to the API URL reachable by users' browsers. Both examples default to `localhost`; use your deployment hostname for remote access. `VITE_API_URL` is embedded at build time: rebuild the frontend after changing it. Never put secrets in `VITE_*` variables, which are public.
+
+`FRONTEND_PORT`, `BACKEND_PORT`, `DATABASE_PORT`, and `CACHE_PORT` control published host ports; `PORT` controls the backend's internal listening port. Update the public URLs if you change the published frontend/API ports. `UPLOAD_DIR` must be a relative directory beneath the backend working directory so the Compose volume remains mounted at the same location.
+
+Keep `NODE_ENV=production` and `SEED_DEMO_DATA=false` for real production data. Enable demo seeding only on a demonstration instance: it creates known demo credentials and resets their passwords on each startup. The Compose example is a starting point, not production hardening: configure HTTPS and restrict or remove public database/cache port exposure.
 
 Demo accounts created by the seed script:
 

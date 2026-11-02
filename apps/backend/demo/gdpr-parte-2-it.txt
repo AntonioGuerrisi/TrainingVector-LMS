@@ -1,0 +1,26 @@
+GDPR IN 60 SECONDI
+Voce sintetica italiana. Contenuto introduttivo, non consulenza legale.
+
+00-10s | 01 / GDPR NELLA PRATICA
+Nella prima parte abbiamo conosciuto il GDPR. Adesso passiamo alla pratica: proteggere i dati non richiede superpoteri, ma attenzione quotidiana. Partiamo da sei abitudini semplici, utili anche al lavoro.
+
+10-20s | 02 / RACCOGLI IL NECESSARIO
+Devi iscrivere qualcuno a un corso? Chiedi soltanto i dati necessari. Raccogliere informazioni per abitudine aumenta i rischi. Spiega lo scopo e usa quei dati solo per finalità compatibili.
+
+20-30s | 03 / CONDIVIDI CON ATTENZIONE
+Prima di inviare un'email, controlla destinatari e allegati. Per comunicazioni collettive, valuta la copia nascosta. Condividi documenti soltanto con chi deve accedervi, usando gli strumenti autorizzati dalla tua organizzazione.
+
+30-40s | 04 / PROTEGGI GLI ACCESSI
+Usa password uniche e l'autenticazione a più fattori, quando disponibile. Non prestare le credenziali, blocca lo schermo e mantieni aggiornati i dispositivi. La sicurezza protegge i dati, ma anche te.
+
+40-50s | 05 / SE QUALCOSA VA STORTO
+Hai perso un dispositivo o inviato dati alla persona sbagliata? Avvisa subito il referente interno. Il titolare valuta la violazione e, quando dovuto, notifica il Garante entro settantadue ore dalla conoscenza.
+
+50-60s | 06 / LA REGOLA DA PORTARE VIA
+Rispetta i tempi di conservazione e inoltra subito le richieste sui diritti ai referenti competenti. Non cancellare documenti a caso. Nel dubbio, chiedi: meno dati inutili, più cura delle persone.
+
+Fonti:
+https://eur-lex.europa.eu/eli/reg/2016/679/oj
+https://commission.europa.eu/law/law-topic/data-protection/legal-framework-eu-data-protection_en
+Voce: Piper it_IT-paola-medium; dataset CC0-1.0.
+https://huggingface.co/rhasspy/piper-voices/tree/main/it/it_IT/paola/medium

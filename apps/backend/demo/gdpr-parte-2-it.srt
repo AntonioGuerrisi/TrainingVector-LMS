@@ -1,0 +1,95 @@
+1
+00:00:00,250 --> 00:00:03,152
+Nella prima parte abbiamo conosciuto il GDPR. Adesso passiamo
+
+2
+00:00:03,152 --> 00:00:06,053
+alla pratica: proteggere i dati non richiede superpoteri, ma
+
+3
+00:00:06,053 --> 00:00:08,955
+attenzione quotidiana. Partiamo da sei abitudini semplici, utili anche
+
+4
+00:00:08,955 --> 00:00:09,600
+al lavoro.
+
+5
+00:00:10,250 --> 00:00:13,152
+Devi iscrivere qualcuno a un corso? Chiedi soltanto i
+
+6
+00:00:13,152 --> 00:00:16,053
+dati necessari. Raccogliere informazioni per abitudine aumenta i rischi.
+
+7
+00:00:16,053 --> 00:00:18,955
+Spiega lo scopo e usa quei dati solo per
+
+8
+00:00:18,955 --> 00:00:19,600
+finalità compatibili.
+
+9
+00:00:20,250 --> 00:00:23,152
+Prima di inviare un'email, controlla destinatari e allegati. Per
+
+10
+00:00:23,152 --> 00:00:26,053
+comunicazioni collettive, valuta la copia nascosta. Condividi documenti soltanto
+
+11
+00:00:26,053 --> 00:00:28,955
+con chi deve accedervi, usando gli strumenti autorizzati dalla
+
+12
+00:00:28,955 --> 00:00:29,600
+tua organizzazione.
+
+13
+00:00:30,250 --> 00:00:33,055
+Usa password uniche e l'autenticazione a più fattori, quando
+
+14
+00:00:33,055 --> 00:00:35,860
+disponibile. Non prestare le credenziali, blocca lo schermo e
+
+15
+00:00:35,860 --> 00:00:38,665
+mantieni aggiornati i dispositivi. La sicurezza protegge i dati,
+
+16
+00:00:38,665 --> 00:00:39,600
+ma anche te.
+
+17
+00:00:40,250 --> 00:00:42,965
+Hai perso un dispositivo o inviato dati alla persona
+
+18
+00:00:42,965 --> 00:00:45,679
+sbagliata? Avvisa subito il referente interno. Il titolare valuta
+
+19
+00:00:45,679 --> 00:00:48,394
+la violazione e, quando dovuto, notifica il Garante entro
+
+20
+00:00:48,394 --> 00:00:49,600
+settantadue ore dalla conoscenza.
+
+21
+00:00:50,250 --> 00:00:53,055
+Rispetta i tempi di conservazione e inoltra subito le
+
+22
+00:00:53,055 --> 00:00:55,860
+richieste sui diritti ai referenti competenti. Non cancellare documenti
+
+23
+00:00:55,860 --> 00:00:58,665
+a caso. Nel dubbio, chiedi: meno dati inutili, più
+
+24
+00:00:58,665 --> 00:00:59,600
+cura delle persone.

@@ -1,0 +1,26 @@
+GDPR IN 60 SECONDI
+Voce sintetica italiana. Contenuto introduttivo, non consulenza legale.
+
+00-10s | 01 / CHE COS'È
+Un acquisto online, un curriculum, una foto: i dati personali sono ovunque. Il GDPR, regolamento generale sulla protezione dei dati, tutela le persone quando queste informazioni vengono utilizzate.
+
+10-20s | 02 / CHI L'HA APPROVATO
+Lo hanno approvato il Parlamento europeo e il Consiglio dell'Unione europea nel duemilasedici. Si applica dal venticinque maggio duemiladiciotto, con regole comuni per imprese ed enti pubblici.
+
+20-30s | 03 / QUALI DATI
+Un dato personale può identificarti, anche indirettamente: una foto, un'email, la posizione. I dati sulla salute richiedono tutele rafforzate. Non conta soltanto il nome sul documento.
+
+30-40s | 04 / A COSA SERVE
+Chi tratta dati deve avere una base giuridica valida, spiegare perché li usa, raccogliere solo ciò che serve e proteggerlo. Il consenso è una possibile base: non l'unica.
+
+40-50s | 05 / I TUOI DIRITTI
+Puoi sapere quali dati vengono trattati, chiederne la correzione e, nei casi previsti, la cancellazione. Se qualcosa non torna, puoi presentare un reclamo al Garante per la protezione dei dati personali.
+
+50-60s | 06 / DA RICORDARE
+Nella pratica: controlla i destinatari, usa canali sicuri e non condividere dati inutili. Il GDPR non serve a bloccare il lavoro: serve a usare le informazioni rispettando le persone.
+
+Fonti:
+https://eur-lex.europa.eu/eli/reg/2016/679/oj
+https://commission.europa.eu/law/law-topic/data-protection/legal-framework-eu-data-protection_en
+Voce: Piper it_IT-paola-medium; dataset CC0-1.0.
+https://huggingface.co/rhasspy/piper-voices/tree/main/it/it_IT/paola/medium
